@@ -70,12 +70,26 @@ class WindozerNameplate : public PluginBase, private Nameplate {
 		}
 
 		virtual bool GetConfigPath(wchar_t path[UNICODE_MAX_PATH]) override {
+			WriteDiagnosticLog("[Nameplate diagnostic] GetConfigPath entered");
 			MMFSettingsHandler settings;
 
 			ZeroMemory(&settings, sizeof(settings));
-			plugin_manager_->GetMMFSettingsHandler(&settings);
+			WriteDiagnosticLog("[Nameplate diagnostic] Requesting MMF settings handler");
+			MMFSettingsHandler* result = plugin_manager_->GetMMFSettingsHandler(&settings);
+			WriteDiagnosticLog("[Nameplate diagnostic] MMF settings handler returned");
 
-			StringCchPrintfW(path, UNICODE_MAX_PATH, L"%S\\plugins\\settings", settings.WindowerPath);
+			if (result == nullptr) {
+				WriteDiagnosticLog("[Nameplate diagnostic] MMF settings handler returned null");
+				return false;
+			}
+
+			WriteDiagnosticLog("[Nameplate diagnostic] Formatting Windower settings path");
+			HRESULT pathResult = StringCchPrintfW(path, UNICODE_MAX_PATH, L"%S\\plugins\\settings", settings.WindowerPath);
+			if (FAILED(pathResult)) {
+				WriteDiagnosticLog("[Nameplate diagnostic] Formatting Windower settings path failed");
+				return false;
+			}
+			WriteDiagnosticLog("[Nameplate diagnostic] GetConfigPath completed");
 			return true;
 		}
 
