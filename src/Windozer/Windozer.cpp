@@ -42,7 +42,7 @@ class WindozerNameplate : public PluginBase, private Nameplate {
 			}
         }
 
-        virtual void __stdcall PluginCommand(const char* cmd, const char* name) override;
+        virtual void __stdcall PluginCommand(const char* cmd) override;
 
 		virtual void Debug(const char* text) override {
 			plugin_manager_->GetConsole()->Write(text);
