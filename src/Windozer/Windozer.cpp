@@ -34,7 +34,7 @@ static void WriteDiagnosticLog(const char* message) {
 
 	DWORD written = 0;
 	WriteFile(file, message, static_cast<DWORD>(lstrlenA(message)), &written, nullptr);
-	WriteFile(file, "\\r\\n", 2, &written, nullptr);
+	WriteFile(file, "\r\n", 2, &written, nullptr);
 	CloseHandle(file);
 }
 
