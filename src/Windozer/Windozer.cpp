@@ -14,6 +14,7 @@ If not, see <https://www.gnu.org/licenses/>.
 
 #include <windows.h>
 #include <strsafe.h>
+#include <cstring>
 
 #include "Windozer.h"
 
@@ -83,10 +84,27 @@ class WindozerNameplate : public PluginBase, private Nameplate {
 				return false;
 			}
 
-			WriteDiagnosticLog("[Nameplate diagnostic] Formatting Windower settings path");
-			HRESULT pathResult = StringCchPrintfW(path, UNICODE_MAX_PATH, L"%S\\plugins\\settings", settings.WindowerPath);
+			// The Windower API returns the settings structure pointer. Use that
+			// returned structure and validate the narrow path before conversion.
+			WriteDiagnosticLog("[Nameplate diagnostic] Validating returned Windower path");
+			const char* windowerPath = result->WindowerPath;
+			const size_t pathLength = strnlen_s(windowerPath, sizeof(result->WindowerPath));
+			if (pathLength == 0 || pathLength >= sizeof(result->WindowerPath)) {
+				WriteDiagnosticLog("[Nameplate diagnostic] Returned Windower path is empty or unterminated");
+				return false;
+			}
+
+			WriteDiagnosticLog("[Nameplate diagnostic] Converting Windower path to Unicode");
+			int converted = MultiByteToWideChar(CP_ACP, 0, windowerPath, static_cast<int>(pathLength + 1), path, UNICODE_MAX_PATH);
+			if (converted == 0) {
+				WriteDiagnosticLog("[Nameplate diagnostic] Windower path conversion failed");
+				return false;
+			}
+
+			WriteDiagnosticLog("[Nameplate diagnostic] Appending plugins settings directory");
+			HRESULT pathResult = StringCchCatW(path, UNICODE_MAX_PATH, L"\\plugins\\settings");
 			if (FAILED(pathResult)) {
-				WriteDiagnosticLog("[Nameplate diagnostic] Formatting Windower settings path failed");
+				WriteDiagnosticLog("[Nameplate diagnostic] Appending plugins settings directory failed");
 				return false;
 			}
 			WriteDiagnosticLog("[Nameplate diagnostic] GetConfigPath completed");
