@@ -776,18 +776,24 @@ int Nameplate::Update() {
 }
 
 int Nameplate::LoadSettings() {
-
+	Debug("[Nameplate diagnostic] LoadSettings entered");
 	wchar_t basePath[UNICODE_MAX_PATH];
+	Debug("[Nameplate diagnostic] Calling GetConfigPath");
 	bool pathOk = this->GetConfigPath(basePath);
+	Debug(pathOk ? "[Nameplate diagnostic] GetConfigPath returned true" : "[Nameplate diagnostic] GetConfigPath returned false");
 
 	int ret;
 
 	if (pathOk) {
+		Debug("[Nameplate diagnostic] Calling Settings.Load");
 		ret = Settings.Load(basePath);
+		Debug("[Nameplate diagnostic] Settings.Load returned");
 		if (ret < 0) {
 			return ret;
 		}
+		Debug("[Nameplate diagnostic] Calling Settings.Save");
 		ret = Settings.Save(basePath);
+		Debug("[Nameplate diagnostic] Settings.Save returned");
 		if (ret < 0) {
 			return ret;
 		}
@@ -795,6 +801,7 @@ int Nameplate::LoadSettings() {
 		return -12;
 	}
 
+	Debug("[Nameplate diagnostic] LoadSettings completed");
 	return 0;
 }
 
