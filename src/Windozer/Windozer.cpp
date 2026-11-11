@@ -22,8 +22,10 @@ If not, see <https://www.gnu.org/licenses/>.
 
 class WindozerNameplate : public PluginBase, private Nameplate {
     public:
+        const char* __stdcall GetPluginAuthor() override { return "BunnyBox Productions"; }
+        const char* __stdcall GetPluginName() override { return "Nameplate"; }
         virtual void __stdcall Load(PluginManager* _manager) override {
-            pPluginManager = _manager;
+            plugin_manager_ = _manager;
 
             int ret = this->Init();
 
@@ -39,19 +41,18 @@ class WindozerNameplate : public PluginBase, private Nameplate {
 				ShowMessage(MESSAGE::PLUGIN_UNLOAD_ERROR, ret);
 			}
         }
-        virtual PluginMetadata* __stdcall GetMetadata(PluginMetadata* metadata) override;
 
         virtual void __stdcall PluginCommand(const char* cmd, const char* name) override;
 
 		virtual void Debug(const char* text) override {
-			pPluginManager->GetConsole()->Write(text);
+			plugin_manager_->GetConsole()->Write(text);
 		}
 
 		virtual bool GetConfigPath(wchar_t path[UNICODE_MAX_PATH]) override {
 			MMFSettingsHandler settings;
 
 			ZeroMemory(&settings, sizeof(settings));
-			pPluginManager->GetMMFSettingsHandler(&settings);
+			plugin_manager_->GetMMFSettingsHandler(&settings);
 
 			StringCchPrintfW(path, UNICODE_MAX_PATH, L"%S\\plugins\\settings", settings.WindowerPath);
 			return true;
@@ -60,13 +61,7 @@ class WindozerNameplate : public PluginBase, private Nameplate {
 		virtual void ShowMessage(MESSAGE message, int param) override;
 };
 
-PluginMetadata* __stdcall WindozerNameplate::GetMetadata(PluginMetadata* metadata) {
-    StringCbCopyA(metadata->Author, sizeof(metadata->Author), "BunnyBox Productions");
-    StringCbCopyA(metadata->Name, sizeof(metadata->Name), "Nameplate");
-    return metadata;
-}
-
-void __stdcall WindozerNameplate::PluginCommand(const char* cmd, [[maybe_unused]] const char* name) {
+void __stdcall WindozerNameplate::PluginCommand(const char* cmd) {
 	ParseCommand(cmd, false);
 }
 
@@ -171,11 +166,11 @@ static constexpr ShowMessageCallback WindozerMessages[/*MESSAGE::MESSAGE_MAX*/] 
 
 void WindozerNameplate::ShowMessage(MESSAGE message, int param) {
     if ((uint32_t) message < (uint32_t) MESSAGE::MESSAGE_MAX && WindozerMessages[(uint32_t) message] != nullptr) {
-        WindozerMessages[(uint32_t) message](pPluginManager->GetConsole(), message, param);
+        WindozerMessages[(uint32_t) message](plugin_manager_->GetConsole(), message, param);
     } else {
 		char buf[1000];
 		StringCbPrintfA(buf, sizeof(buf), "[Nameplate] Unknown message %u (%d)\\cr", (uint32_t) message, param);
-        pPluginManager->GetConsole()->Write(buf);
+        plugin_manager_->GetConsole()->Write(buf);
     }
 }
 
