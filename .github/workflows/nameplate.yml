@@ -26,7 +26,7 @@ jobs:
         with:
           repository: AshitaXI/Ashita-v4beta
           path: ashita-sdk-430
-          ref: 2025_q3_update
+          ref: main
 
       - name: Setup CMake
         uses: lukka/get-cmake@latest
