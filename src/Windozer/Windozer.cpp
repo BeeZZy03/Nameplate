@@ -20,25 +20,6 @@ If not, see <https://www.gnu.org/licenses/>.
 
 #include "../Nameplate.h"
 
-// Diagnostic logging is intentionally independent of Windower's console interface.
-// This lets us retain the last checkpoint even if a console call or game patch crashes.
-static void WriteDiagnosticLog(const char* message) {
-	wchar_t tempPath[MAX_PATH];
-	wchar_t logPath[MAX_PATH];
-	DWORD length = GetTempPathW(MAX_PATH, tempPath);
-	if (length == 0 || length >= MAX_PATH) return;
-	if (FAILED(StringCchPrintfW(logPath, MAX_PATH, L"%sNameplate-diagnostic.log", tempPath))) return;
-
-	HANDLE file = CreateFileW(logPath, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE,
-		nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (file == INVALID_HANDLE_VALUE) return;
-
-	DWORD written = 0;
-	WriteFile(file, message, static_cast<DWORD>(lstrlenA(message)), &written, nullptr);
-	WriteFile(file, "\r\n", 2, &written, nullptr);
-	CloseHandle(file);
-}
-
 static const wchar_t SettingsDirectory[] = L"\\settings";
 
 class WindozerNameplate : public PluginBase, private Nameplate {
@@ -47,10 +28,8 @@ class WindozerNameplate : public PluginBase, private Nameplate {
         const char* __stdcall GetPluginName() override { return "Nameplate"; }
         virtual void __stdcall Load(PluginManager* _manager) override {
             plugin_manager_ = _manager;
-            WriteDiagnosticLog("[Nameplate diagnostic] Windower Load callback entered");
 
             int ret = this->Init();
-            WriteDiagnosticLog("[Nameplate diagnostic] Init returned");
 
 			if (ret < 0) {
 		        ShowMessage(MESSAGE::PLUGIN_LOAD_ERROR, ret);
@@ -68,39 +47,32 @@ class WindozerNameplate : public PluginBase, private Nameplate {
         virtual void __stdcall PluginCommand(const char* cmd) override;
 
 		virtual void Debug(const char* text) override {
-			WriteDiagnosticLog(text);
 			plugin_manager_->GetConsole()->Write(text);
 		}
 
 		virtual bool GetConfigPath(wchar_t path[UNICODE_MAX_PATH]) override {
-			WriteDiagnosticLog("[Nameplate diagnostic] GetConfigPath entered");
 			// Windower loads Nameplate.dll from its plugins directory.
 			// Use the DLL's own directory to locate the sibling settings folder.
 			HMODULE module = nullptr;
 			if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
 				GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, SettingsDirectory, &module)) {
-				WriteDiagnosticLog("[Nameplate diagnostic] Could not locate Nameplate module");
 				return false;
 			}
 
 			const DWORD length = GetModuleFileNameW(module, path, UNICODE_MAX_PATH);
 			if (length == 0 || length >= UNICODE_MAX_PATH) {
-				WriteDiagnosticLog("[Nameplate diagnostic] Could not read Nameplate module path");
 				return false;
 			}
 
 			wchar_t* const filenameSeparator = std::wcsrchr(path, L'\\');
 			if (filenameSeparator == nullptr) {
-				WriteDiagnosticLog("[Nameplate diagnostic] Nameplate module path has no directory");
 				return false;
 			}
 
 			const size_t remaining = UNICODE_MAX_PATH - (filenameSeparator - path);
 			if (FAILED(StringCchCopyW(filenameSeparator, remaining, SettingsDirectory))) {
-				WriteDiagnosticLog("[Nameplate diagnostic] Appending plugins settings directory failed");
 				return false;
 			}
-			WriteDiagnosticLog("[Nameplate diagnostic] GetConfigPath completed");
 			return true;
 		}
 

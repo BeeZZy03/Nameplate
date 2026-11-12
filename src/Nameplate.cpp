@@ -563,20 +563,14 @@ void Nameplate::Debug(const wchar_t* text) {
 }
 
 int Nameplate::Init() {
-	Debug("[Nameplate diagnostic] Init entered");
 	ZeroMemory(&Globals, sizeof(Globals));
 
 	// Configuration setup
-	Debug("[Nameplate diagnostic] Initializing settings");
 	Settings.Init();
-	Debug("[Nameplate diagnostic] Loading settings");
 	LoadSettings();
-	Debug("[Nameplate diagnostic] Settings stage complete");
 
 	// GetFrameDelta
-	Debug("[Nameplate diagnostic] Searching GetFrameDelta signature");
 	uintptr_t pGetFrameDelta = (uintptr_t) getFrameDeltaSig.Find();
-	Debug(pGetFrameDelta ? "[Nameplate diagnostic] GetFrameDelta found" : "[Nameplate diagnostic] GetFrameDelta NOT found");
 	if (pGetFrameDelta == 0) {
 		return -4;
 	}
@@ -593,9 +587,7 @@ int Nameplate::Init() {
 	// note - some of these tests no longer make any sense, as the safe reads were removed
 
 	// InitApplicationDefaults (for lack of a better name)
-	Debug("[Nameplate diagnostic] Searching InitApplicationDefaults signature");
 	uintptr_t pInitApplicationDefaults = (uintptr_t) initApplicationDefaultsSig.Find();
-	Debug(pInitApplicationDefaults ? "[Nameplate diagnostic] InitApplicationDefaults found" : "[Nameplate diagnostic] InitApplicationDefaults NOT found");
 	if (pInitApplicationDefaults == 0) {
 		return -6;
 	}
@@ -616,9 +608,7 @@ int Nameplate::Init() {
 	}
 
 	// GetPlayerEntity
-	Debug("[Nameplate diagnostic] Searching GetPlayerEntity signature");
 	uintptr_t pGetPlayerEntity = (uintptr_t) getPlayerEntitySig.Find();
-	Debug(pGetPlayerEntity ? "[Nameplate diagnostic] GetPlayerEntity found" : "[Nameplate diagnostic] GetPlayerEntity NOT found");
 	if (pGetPlayerEntity == 0) {
 		return -15;
 	}
@@ -630,32 +620,25 @@ int Nameplate::Init() {
 	}
 
 	// DrawName, patch location 0
-	Debug("[Nameplate diagnostic] Searching DrawName patch 0");
 	uintptr_t pDrawNamePatch0 = (uintptr_t) drawNamePatch0LocationSig.Find();
-	Debug(pDrawNamePatch0 ? "[Nameplate diagnostic] DrawName patch 0 found" : "[Nameplate diagnostic] DrawName patch 0 NOT found");
 	if (pDrawNamePatch0 == 0) {
 		return -9;
 	}
 
 	// DrawName, patch location 1 (useless mastery stars)
-	Debug("[Nameplate diagnostic] Searching DrawName patch 1");
 	uintptr_t pDrawNamePatch1 = (uintptr_t) drawNamePatch1LocationSig.Find();
-	Debug(pDrawNamePatch1 ? "[Nameplate diagnostic] DrawName patch 1 found" : "[Nameplate diagnostic] DrawName patch 1 NOT found");
 	if (pDrawNamePatch1 == 0) {
 		return -10;
 	}
 
 	// DrawName2 (mastery stars)
-	Debug("[Nameplate diagnostic] Searching DrawName2 patch");
 	uintptr_t pDrawName2Patch = (uintptr_t) drawName2PatchLocationSig.Find();
-	Debug(pDrawName2Patch ? "[Nameplate diagnostic] DrawName2 patch found" : "[Nameplate diagnostic] DrawName2 patch NOT found");
 	if (pDrawName2Patch == 0) {
 		return -11;
 	}
 
 	// DrawName3 (display mode)
 	// either use the original or the new version, depending on what's found
-	Debug("[Nameplate diagnostic] Searching DrawName3 signatures");
 	uintptr_t pDrawName3Patch = (uintptr_t) drawName3PatchLocationSig.Find();
 	uintptr_t pDrawName3V2Patch = (uintptr_t) drawName3V2PatchLocationSig.Find();
 	if (pDrawName3Patch == 0 && pDrawName3V2Patch == 0) {
@@ -671,14 +654,11 @@ int Nameplate::Init() {
 	}
 
 	// DrawDamage
-	Debug("[Nameplate diagnostic] Searching DrawDamage patch");
 	uintptr_t pDrawDamagePatch = (uintptr_t) drawDamagePatchLocationSig.Find();
-	Debug(pDrawDamagePatch ? "[Nameplate diagnostic] DrawDamage patch found" : "[Nameplate diagnostic] DrawDamage patch NOT found");
 	if (pDrawDamagePatch == 0) {
 		return -18;
 	}
 
-	Debug("[Nameplate diagnostic] All signatures found; beginning memory patching");
 	uint8_t* pLoc;
 
 	CopyMemory(&Globals.DrawNamePatch0Orig[0], reinterpret_cast<const void*> (pDrawNamePatch0), DRAWNAME_PATCH0_SIZE);
@@ -757,7 +737,6 @@ int Nameplate::Init() {
 	Globals.DrawName3V2PatchAddr = pDrawName3V2Patch;
 	Globals.DrawDamagePatchAddr = pDrawDamagePatch;
 
-	Debug("[Nameplate diagnostic] Initialization and patching completed");
 	return 0;
 }
 
@@ -776,24 +755,17 @@ int Nameplate::Update() {
 }
 
 int Nameplate::LoadSettings() {
-	Debug("[Nameplate diagnostic] LoadSettings entered");
 	wchar_t basePath[UNICODE_MAX_PATH];
-	Debug("[Nameplate diagnostic] Calling GetConfigPath");
 	bool pathOk = this->GetConfigPath(basePath);
-	Debug(pathOk ? "[Nameplate diagnostic] GetConfigPath returned true" : "[Nameplate diagnostic] GetConfigPath returned false");
 
 	int ret;
 
 	if (pathOk) {
-		Debug("[Nameplate diagnostic] Calling Settings.Load");
 		ret = Settings.Load(basePath);
-		Debug("[Nameplate diagnostic] Settings.Load returned");
 		if (ret < 0) {
 			return ret;
 		}
-		Debug("[Nameplate diagnostic] Calling Settings.Save");
 		ret = Settings.Save(basePath);
-		Debug("[Nameplate diagnostic] Settings.Save returned");
 		if (ret < 0) {
 			return ret;
 		}
@@ -801,7 +773,6 @@ int Nameplate::LoadSettings() {
 		return -12;
 	}
 
-	Debug("[Nameplate diagnostic] LoadSettings completed");
 	return 0;
 }
 
