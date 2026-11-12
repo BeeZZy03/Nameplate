@@ -14,7 +14,7 @@ If not, see <https://www.gnu.org/licenses/>.
 
 #include <windows.h>
 #include <strsafe.h>
-#include <cstring>
+#include <cwchar>
 
 #include "Windozer.h"
 
@@ -38,6 +38,8 @@ static void WriteDiagnosticLog(const char* message) {
 	WriteFile(file, "\r\n", 2, &written, nullptr);
 	CloseHandle(file);
 }
+
+static const wchar_t SettingsDirectory[] = L"\\settings";
 
 class WindozerNameplate : public PluginBase, private Nameplate {
     public:
@@ -72,38 +74,29 @@ class WindozerNameplate : public PluginBase, private Nameplate {
 
 		virtual bool GetConfigPath(wchar_t path[UNICODE_MAX_PATH]) override {
 			WriteDiagnosticLog("[Nameplate diagnostic] GetConfigPath entered");
-			MMFSettingsHandler settings;
-
-			ZeroMemory(&settings, sizeof(settings));
-			WriteDiagnosticLog("[Nameplate diagnostic] Requesting MMF settings handler");
-			MMFSettingsHandler* result = plugin_manager_->GetMMFSettingsHandler(&settings);
-			WriteDiagnosticLog("[Nameplate diagnostic] MMF settings handler returned");
-
-			if (result == nullptr) {
-				WriteDiagnosticLog("[Nameplate diagnostic] MMF settings handler returned null");
+			// Windower loads Nameplate.dll from its plugins directory.
+			// Use the DLL's own directory to locate the sibling settings folder.
+			HMODULE module = nullptr;
+			if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+				GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, SettingsDirectory, &module)) {
+				WriteDiagnosticLog("[Nameplate diagnostic] Could not locate Nameplate module");
 				return false;
 			}
 
-			// The Windower API returns the settings structure pointer. Use that
-			// returned structure and validate the narrow path before conversion.
-			WriteDiagnosticLog("[Nameplate diagnostic] Validating returned Windower path");
-			const char* windowerPath = result->WindowerPath;
-			const size_t pathLength = strnlen_s(windowerPath, sizeof(result->WindowerPath));
-			if (pathLength == 0 || pathLength >= sizeof(result->WindowerPath)) {
-				WriteDiagnosticLog("[Nameplate diagnostic] Returned Windower path is empty or unterminated");
+			const DWORD length = GetModuleFileNameW(module, path, UNICODE_MAX_PATH);
+			if (length == 0 || length >= UNICODE_MAX_PATH) {
+				WriteDiagnosticLog("[Nameplate diagnostic] Could not read Nameplate module path");
 				return false;
 			}
 
-			WriteDiagnosticLog("[Nameplate diagnostic] Converting Windower path to Unicode");
-			int converted = MultiByteToWideChar(CP_ACP, 0, windowerPath, static_cast<int>(pathLength + 1), path, UNICODE_MAX_PATH);
-			if (converted == 0) {
-				WriteDiagnosticLog("[Nameplate diagnostic] Windower path conversion failed");
+			wchar_t* const filenameSeparator = std::wcsrchr(path, L'\\');
+			if (filenameSeparator == nullptr) {
+				WriteDiagnosticLog("[Nameplate diagnostic] Nameplate module path has no directory");
 				return false;
 			}
 
-			WriteDiagnosticLog("[Nameplate diagnostic] Appending plugins settings directory");
-			HRESULT pathResult = StringCchCatW(path, UNICODE_MAX_PATH, L"\\plugins\\settings");
-			if (FAILED(pathResult)) {
+			const size_t remaining = UNICODE_MAX_PATH - (filenameSeparator - path);
+			if (FAILED(StringCchCopyW(filenameSeparator, remaining, SettingsDirectory))) {
 				WriteDiagnosticLog("[Nameplate diagnostic] Appending plugins settings directory failed");
 				return false;
 			}
