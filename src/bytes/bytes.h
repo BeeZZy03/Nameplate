@@ -16,13 +16,10 @@ If not, see <https://www.gnu.org/licenses/>.
 #define BYTES__BYTES_H
 
 #include <inttypes.h>
+#include <bit>
 
 [[maybe_unused]] static inline float i2f(uint32_t i) {
-    union p {
-        uint32_t i;
-        float f;
-    };
-    return ((union p){ .i = i }).f;
+    return std::bit_cast<float>(i);
 }
 
 #define GET_VARARGS_MACRO3(_1, _2, _3, MACRO_NAME, ...) MACRO_NAME
