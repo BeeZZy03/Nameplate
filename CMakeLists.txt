@@ -7,11 +7,7 @@ project(Nameplate
     HOMEPAGE_URL "https://www.github.com/Shirk/Nameplate"
 )
 
-set(ASHITA_SDK_PATH "" CACHE STRING "Ashita SDK Path")
-
-if(NOT ASHITA_SDK_PATH)
-    message(FATAL_ERROR "ASHITA_SDK_PATH not set. Provide with: -DASHITA_SDK_PATH=/path/to/sdk")
-endif()
+set(ASHITA_SDK_PATH "" CACHE PATH "Ashita SDK path (optional for a Windower-only build)")
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED True)
@@ -31,20 +27,35 @@ target_sources(Nameplate PUBLIC
     src/Nameplate.cpp
     src/Nameplate.h
 
-    src/Ashita/Ashita.cpp
-    src/Ashita/exports.h
 
     src/Windozer/Windozer.cpp
     src/Windozer/Windozer.h
 
-    src/exports.def
     "${CMAKE_CURRENT_BINARY_DIR}/versioninfo.rc"
 
     PUBLIC FILE_SET CXX_MODULES FILES
     src/findsignature.cppm
     )
 
-target_include_directories(Nameplate PRIVATE ${ASHITA_SDK_PATH})
+if(ASHITA_SDK_PATH)
+    target_sources(Nameplate PRIVATE
+        src/Ashita/Ashita.cpp
+        src/Ashita/exports.h
+        src/exports.def
+    )
+    target_include_directories(Nameplate PRIVATE "${ASHITA_SDK_PATH}")
+else()
+    message(STATUS "Building Nameplate for Windower only")
+    set(WINDOWER_EXPORTS "${CMAKE_CURRENT_BINARY_DIR}/windower_exports.def")
+    file(GENERATE OUTPUT "${WINDOWER_EXPORTS}" CONTENT
+"LIBRARY Nameplate
+VERSION ${PROJECT_VERSION}
+EXPORTS
+    GetInterfaceVersion
+    CreateInstance
+")
+    target_sources(Nameplate PRIVATE "${WINDOWER_EXPORTS}")
+endif()
 target_compile_definitions(Nameplate PRIVATE WIN32_LEAN_AND_MEAN)
 set_property(TARGET Nameplate PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
